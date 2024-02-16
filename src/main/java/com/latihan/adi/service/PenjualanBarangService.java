@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,6 +29,8 @@ public class PenjualanBarangService {
     @Autowired
     private  StokBarangRepository stokBarangRepository;
 
+    @Transactional
+
     public ResponseEntity<MessageModel> addPenjualanBarang(PenjualanPojo penjualanPojo) {
         Map<String, Object> result = new HashMap<>();
         MessageModel msg = new MessageModel();
@@ -39,22 +42,37 @@ public class PenjualanBarangService {
                 if(nameUser.getRoleUser().equals("penjual")) {
                     TblStockBarang nameBarang = stokBarangRepository.getBarangName(penjualanPojo.getNameBarang());
                     if(nameBarang != null) {
-                        TblPenjualan tblPenjualan = new TblPenjualan();
-                        tblPenjualan.setIdPenjualan(UUID.randomUUID());
-                        tblPenjualan.setNameUser(penjualanPojo.getNameUser());
-                        tblPenjualan.setNameBarang(penjualanPojo.getNameBarang());
-                        tblPenjualan.setJumlahBarang(penjualanPojo.getJumlahBarang());
-                        tblPenjualan.setHargaBarang(penjualanPojo.getHargaBarang());
-                        System.out.println(nameBarang);
-                        System.out.println(nameBarang.getStokBarang());
-                        System.out.println(nameUser);
-                        System.out.println(nameUser.getRoleUser());
-                        System.out.println(tblPenjualan);
-                        msg.setStatus(true);
-                        msg.setMessage("Success Pembelian");
-//                    result.put("Data", tblStockBarang);
-                        msg.setData(result);
-                        return ResponseEntity.ok().body(msg);
+                        if(penjualanPojo.getJumlahBarang() == 0  || penjualanPojo.getHargaBarang() == 0) {
+                            msg.setStatus(true);
+                            msg.setMessage("Input angka Jumlah Barang & Harga Barang");
+                            msg.setData(result);
+                            return ResponseEntity.ok().body(msg);
+                        } else {
+                            if(penjualanPojo.getJumlahBarang() <= nameBarang.getStokBarang()) {
+                                TblPenjualan tblPenjualan = new TblPenjualan();
+                                tblPenjualan.setIdPenjualan(UUID.randomUUID());
+                                tblPenjualan.setNameUser(penjualanPojo.getNameUser());
+                                tblPenjualan.setNameBarang(penjualanPojo.getNameBarang());
+                                tblPenjualan.setJumlahBarang(penjualanPojo.getJumlahBarang());
+                                tblPenjualan.setHargaBarang(penjualanPojo.getHargaBarang());
+
+                                int totalStock = nameBarang.getStokBarang() - penjualanPojo.getJumlahBarang();
+                                String nameBarangSatu = penjualanPojo.getNameBarang();
+                                penjualanBarangRepository.save(tblPenjualan);
+//                                System.out.println();
+
+                                stokBarangRepository.setStokBarang(totalStock, nameBarangSatu);
+                                msg.setStatus(true);
+                                msg.setMessage("Success Pembelian");
+                                msg.setData(tblPenjualan);
+                                return ResponseEntity.ok().body(msg);
+                            } else {
+                                msg.setStatus(true);
+                                msg.setMessage("Stock Barang tersisa : " + nameBarang.getStokBarang());
+                                msg.setData(result);
+                                return ResponseEntity.ok().body(msg);
+                            }
+                        }
                     } else {
                         msg.setStatus(true);
                         msg.setMessage("Barang tidak tersedia!");

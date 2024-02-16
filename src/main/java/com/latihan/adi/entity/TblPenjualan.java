@@ -14,7 +14,7 @@ import java.util.UUID;
 @Table(name = "tbl_penjualan", schema = "public")
 public class TblPenjualan implements Serializable {
     @Id
-    @Column(name = "id_penjual", nullable = false)
+    @Column(name = "id_penjualan", nullable = false)
     private UUID idPenjualan;
 
     @Column(name = "name_user")
